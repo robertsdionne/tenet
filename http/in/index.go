@@ -2,15 +2,20 @@ package in
 
 import (
 	"encoding/json"
+	"github.com/robertsdionne/tenet/mod"
 	"github.com/robertsdionne/tenet/ten"
 	"net/http"
 )
 
 // Controller holds HTTP handlers.
-type Controller struct{}
+type Controller struct {
+	model mod.Model
+}
 
 // Setup sets up the handlers for /in.
-func (controller Controller) Setup() {
+func (controller Controller) Setup(model mod.Model) {
+	controller.model = model
+
 	http.HandleFunc("/in", controller.index)
 }
 
@@ -28,7 +33,7 @@ func (controller *Controller) index(w http.ResponseWriter, r *http.Request) {
 type getResponse map[string]ten.Shape
 
 func (controller *Controller) get(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(getResponse{})
+	json.NewEncoder(w).Encode(controller.model.Inputs())
 }
 
 type postRequest map[string]ten.Tensor
