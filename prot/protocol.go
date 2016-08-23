@@ -3,6 +3,7 @@ package prot
 import (
 	"fmt"
 	"sort"
+	"strings"
 )
 
 // Protocol identifies the protocol the server will use.
@@ -34,8 +35,9 @@ func (protocol *Protocol) Get() interface{} {
 
 // Set sets the value of the Protocol flag.Value.
 func (protocol *Protocol) Set(value string) (err error) {
-	index := sort.SearchStrings(protocols, value)
-	if index < len(protocols) && protocols[index] == value {
+	lowerValue := strings.ToLower(value)
+	index := sort.SearchStrings(protocols, lowerValue)
+	if index < len(protocols) && protocols[index] == lowerValue {
 		*protocol = Protocol(value)
 	} else {
 		err = fmt.Errorf("%s is not a valid Protocol", value)
