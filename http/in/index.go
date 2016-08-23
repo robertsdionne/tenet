@@ -2,6 +2,7 @@ package in
 
 import (
 	"encoding/json"
+	"github.com/robertsdionne/tenet/ten"
 	"net/http"
 )
 
@@ -24,16 +25,22 @@ func (controller *Controller) index(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type getResponse struct{}
-
-type postResponse struct{}
+type getResponse map[string]ten.Shape
 
 func (controller *Controller) get(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(getResponse{})
 }
 
+type postRequest map[string]ten.Tensor
+
+type postResponse map[string]ten.Tensor
+
 func (controller *Controller) post(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(postResponse{})
+	request := postRequest{}
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	json.NewEncoder(w).Encode(request)
 }
