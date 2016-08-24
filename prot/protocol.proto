@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package prot;
+
+import "google/protobuf/empty.proto";
+
+message Shape {
+  repeated int32 components = 1;
+}
+
+message Tensor {
+  repeated int32 shape = 1;
+  repeated int32 stride = 2;
+  repeated float data = 3;
+}
+
+message GetResponse {
+  map<string, Shape> shape = 1;
+}
+
+message PostRequest {
+  map<string, Tensor> tensors = 1;
+}
+
+message PostResponse {
+  map<string, Tensor> gradients = 1;
+}
+
+service TeNet {
+  rpc Get(google.protobuf.Empty) returns (GetResponse) {}
+
+  rpc Post(stream PostRequest) returns (stream PostResponse) {}
+}

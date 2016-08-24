@@ -1,1 +1,3 @@
+/client
 /tenet
+*.pb.go

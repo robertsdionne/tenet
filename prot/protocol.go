@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+//go:generate protoc protocol.proto --go_out=plugins=grpc:.
+
 // Protocol identifies the protocol the server will use.
 type Protocol string
 
