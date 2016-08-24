@@ -37,11 +37,11 @@ func main() {
 		err := stream.Send(&prot.PostRequest{
 			Tensors: map[string]*prot.Tensor{
 				"x": {
-					Data:  []float32{0, 1, 2, 3, 4, 5, 6, 7},
+					Data:  []float64{0, 1, 2, 3, 4, 5, 6, 7},
 					Shape: []int32{2, 2, 2},
 				},
 				"y": {
-					Data:  []float32{7, 6, 5, 4, 3, 2, 1, 0},
+					Data:  []float64{7, 6, 5, 4, 3, 2, 1, 0},
 					Shape: []int32{2, 2, 2},
 				},
 			},

@@ -11,7 +11,7 @@ message Shape {
 message Tensor {
   repeated int32 shape = 1;
   repeated int32 stride = 2;
-  repeated float data = 3;
+  repeated double data = 3;
 }
 
 message GetResponse {
