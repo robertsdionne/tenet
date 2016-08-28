@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/robertsdionne/tenet/prot"
+	"github.com/robertsdionne/tenet/ten"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"log"
+	"time"
 )
 
 var port = flag.Int("port", 8080, "The server port.")
@@ -27,23 +29,26 @@ func main() {
 		log.Fatalf("failed to get: %v", err)
 	}
 
-	log.Printf("Response: %v", response)
+	shape := response.Shape["x"].Components
+	log.Printf("Response: %v", response.Shape["x"].Components)
+
+	initializer := ten.Normal(0, 0.5)
 
 	stream, err := client.Post(context.Background())
 	if err != nil {
 		log.Fatalf("failed to post: %v", err)
 	}
 	for {
+		x := prot.Tensor(initializer(shape...))
+		y_ := ten.New(10, 1)
+		*y_.At(5, 0) = 1
+		y := prot.Tensor(y_)
+		log.Println("x", x)
+		log.Println("y", y)
 		err := stream.Send(&prot.PostRequest{
 			Tensors: map[string]*prot.Tensor{
-				"x": {
-					Data:  []float64{0, 1, 2, 3, 4, 5, 6, 7},
-					Shape: []int32{2, 2, 2},
-				},
-				"y": {
-					Data:  []float64{7, 6, 5, 4, 3, 2, 1, 0},
-					Shape: []int32{2, 2, 2},
-				},
+				"x": &x,
+				"y": &y,
 			},
 		})
 		if err != nil {
@@ -56,5 +61,7 @@ func main() {
 		}
 
 		log.Printf("Response: %v", response)
+
+		time.Sleep(5 * time.Second)
 	}
 }
