@@ -40,15 +40,15 @@ func main() {
 	}
 	for {
 		x := prot.Tensor(initializer(shape...))
-		y_ := ten.New(10, 1)
-		*y_.At(5, 0) = 1
-		y := prot.Tensor(y_)
+		y := ten.New(10, 1)
+		*y.At(5, 0) = 1
+		label := prot.Tensor(y)
 		log.Println("x", x)
 		log.Println("y", y)
 		err := stream.Send(&prot.PostRequest{
 			Tensors: map[string]*prot.Tensor{
-				"x": &x,
-				"y": &y,
+				"x":     &x,
+				"label": &label,
 			},
 		})
 		if err != nil {
