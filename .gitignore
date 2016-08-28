@@ -1,4 +1,5 @@
 /client
+/data/
 /mnist
 /tenet
 *.pb.go
