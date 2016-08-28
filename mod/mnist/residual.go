@@ -6,8 +6,8 @@ import (
 )
 
 type residual struct {
-	W0, b0       ten.Tensor
-	W10, W11, b1 ten.Tensor
+	syntheticGradient
+	W0, b0 ten.Tensor
 }
 
 const (
@@ -19,11 +19,13 @@ const (
 
 func NewResidual(dimension, classes int32) (model mod.Model) {
 	model = &residual{
-		W0:  ten.Normal(μ, σ)(dimension, dimension),
-		b0:  ten.Constant(β)(dimension, 1),
-		W10: ten.Normal(μ, σ)(dimension, dimension),
-		W11: ten.Normal(μ, σ)(dimension, classes),
-		b1:  ten.Constant(β)(dimension, 1),
+		W0: ten.Normal(μ, σ)(dimension, dimension),
+		b0: ten.Constant(β)(dimension, 1),
+		syntheticGradient: syntheticGradient{
+			W10: ten.Normal(μ, σ)(dimension, dimension),
+			W11: ten.Normal(μ, σ)(dimension, classes),
+			b1:  ten.Constant(β)(dimension, 1),
+		},
 	}
 	return
 }
@@ -42,9 +44,9 @@ func (model *residual) Train(
 	x := tensors["x"]
 	label := tensors["label"]
 
-	y, dy, dx, backpropagate := model.process(x, label)
+	y, dy, dx, backprop := model.process(x, label)
 
-	go model.propagate(y, dy, label, callback, backpropagate)
+	go model.propagate(y, dy, label, callback, backprop)
 
 	gradients = ten.TensorMap{
 		"x": dx,

@@ -23,7 +23,7 @@ func ListenAndServe() (err error) {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	server := grpc.NewServer()
-	prot.RegisterTeNetServer(server, newServer(mnist.NewResidual(size, 10)))
+	prot.RegisterTeNetServer(server, newServer(mnist.NewSoftmax(size, 10)))
 	err = server.Serve(listener)
 	return
 }
@@ -63,16 +63,15 @@ func (serve *server) Post(stream prot.TeNet_PostServer) (err error) {
 			return err
 		}
 
-		log.Println(request)
-
 		tensors := ten.TensorMap{}
 		for key, tensor := range request.Tensors {
 			tensors[key] = ten.Tensor(*tensor)
 		}
 
-		gradients := serve.model.Train(tensors, func(ten.TensorMap) ten.TensorMap {
+		gradients := serve.model.Train(tensors, func(tensors ten.TensorMap) ten.TensorMap {
+			log.Println(tensors["x"])
 			return ten.TensorMap{
-				"x": ten.New(28*28, 1),
+				"x": ten.New(10, 1),
 			}
 		})
 

@@ -1,12 +1,7 @@
 package ten
 
-import (
-	"log"
-)
-
 // MatrixMultiply multiplies two matrices w and x.
 func MatrixMultiply(w, x Tensor) (y Tensor) {
-	log.Println(w.Shape, x.Shape)
 	m, r, n := int(w.Shape[0]), int(w.Shape[1]), int(x.Shape[1])
 
 	y = New(int32(m), int32(n))
