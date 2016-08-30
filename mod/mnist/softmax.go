@@ -31,9 +31,7 @@ func (model *softmax) Inputs() (shapes ten.ShapeMap) {
 	return
 }
 
-func (model *softmax) Train(
-	tensors ten.TensorMap, callback mod.Callback) (gradients ten.TensorMap, done chan bool) {
-
+func (model *softmax) Train(tensors ten.TensorMap, callback mod.Callback) (gradients ten.TensorMap, done chan bool) {
 	x := tensors["x"]
 	label := tensors["label"]
 

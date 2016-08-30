@@ -38,9 +38,7 @@ func (model *residual) Inputs() (shapes ten.ShapeMap) {
 	return
 }
 
-func (model *residual) Train(
-	tensors ten.TensorMap, callback mod.Callback) (gradients ten.TensorMap, done chan bool) {
-
+func (model *residual) Train(tensors ten.TensorMap, callback mod.Callback) (gradients ten.TensorMap, done chan bool) {
 	x := tensors["x"]
 	label := tensors["label"]
 
