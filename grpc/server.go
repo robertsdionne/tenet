@@ -68,7 +68,7 @@ func (serve *server) Post(stream prot.TeNet_PostServer) (err error) {
 			tensors[key] = ten.Tensor(*tensor)
 		}
 
-		gradients := serve.model.Train(tensors, func(tensors ten.TensorMap) ten.TensorMap {
+		gradients, done := serve.model.Train(tensors, func(tensors ten.TensorMap) ten.TensorMap {
 			log.Println(tensors["x"])
 			return ten.TensorMap{
 				"x": ten.New(10, 1),
@@ -85,7 +85,10 @@ func (serve *server) Post(stream prot.TeNet_PostServer) (err error) {
 
 		err = stream.Send(response)
 		if err != nil {
+			<-done
 			return err
 		}
+
+		<-done
 	}
 }

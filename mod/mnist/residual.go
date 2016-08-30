@@ -39,14 +39,15 @@ func (model *residual) Inputs() (shapes ten.ShapeMap) {
 }
 
 func (model *residual) Train(
-	tensors ten.TensorMap, callback mod.Callback) (gradients ten.TensorMap) {
+	tensors ten.TensorMap, callback mod.Callback) (gradients ten.TensorMap, done chan bool) {
 
 	x := tensors["x"]
 	label := tensors["label"]
 
 	y, dy, dx, backprop := model.process(x, label)
 
-	go model.propagate(y, dy, label, callback, backprop)
+	done = make(chan bool, 1)
+	go model.propagate(y, dy, label, callback, backprop, done)
 
 	gradients = ten.TensorMap{
 		"x": dx,
@@ -55,7 +56,7 @@ func (model *residual) Train(
 	return
 }
 
-type backpropagate func(loss ten.Tensor) (dw10, dw11, db1 ten.Tensor)
+type backpropagate func(loss ten.Tensor)
 
 func (model *residual) process(x, label ten.Tensor) (y, dy, dx ten.Tensor, backprop backpropagate) {
 	h0 := ten.MatrixMultiply(model.W0, x)
@@ -70,47 +71,52 @@ func (model *residual) process(x, label ten.Tensor) (y, dy, dx ten.Tensor, backp
 	g4 := ten.HyperbolicTangent(g3)
 	dy = ten.Add(g4, y)
 
-	backprop = func(loss ten.Tensor) (dw10, dw11, db1 ten.Tensor) {
-		dg4, _ := ten.AddGradient(loss)
-		dg3 := ten.HyperbolicTangentGradient(dg4, g4)
-		dg2, db1 := ten.BroadcastAddGradient(dg3, model.b1)
-		dg0, dg1 := ten.AddGradient(dg2)
-		dw11, _ = ten.MatrixMultiplyGradient(dg1, model.W11, label)
-		dw10, _ = ten.MatrixMultiplyGradient(dg0, model.W10, y)
-		return
-	}
-
 	dh2, dx0 := ten.AddGradient(dy)
 	dh1 := ten.RectifiedLinearGradient(dh2, h1)
 	dh0, db0 := ten.BroadcastAddGradient(dh1, model.b0)
 	dw0, dx1 := ten.MatrixMultiplyGradient(dh0, model.W0, x)
 	dx = ten.Add(dx0, dx1)
 
-	for i := range dw0.Data {
-		model.W0.Data[i] -= λ * dw0.Data[i]
-	}
-	for i := range db0.Data {
-		model.b0.Data[i] -= λ * db0.Data[i]
+	backprop = func(loss ten.Tensor) {
+		dg4, _ := ten.AddGradient(loss)
+		dg3 := ten.HyperbolicTangentGradient(dg4, g4)
+		dg2, db1 := ten.BroadcastAddGradient(dg3, model.b1)
+		dg0, dg1 := ten.AddGradient(dg2)
+		dw11, _ := ten.MatrixMultiplyGradient(dg1, model.W11, label)
+		dw10, _ := ten.MatrixMultiplyGradient(dg0, model.W10, y)
+
+		for i := range dw0.Data {
+			model.W0.Data[i] -= λ * dw0.Data[i]
+		}
+		for i := range db0.Data {
+			model.b0.Data[i] -= λ * db0.Data[i]
+		}
+
+		for i := range dw10.Data {
+			model.W10.Data[i] -= λ * dw10.Data[i]
+		}
+		for i := range dw11.Data {
+			model.W11.Data[i] -= λ * dw11.Data[i]
+		}
+		for i := range db1.Data {
+			model.b1.Data[i] -= λ * db1.Data[i]
+		}
+
+		return
 	}
 
 	return
 }
 
-func (model *residual) propagate(y, dy, label ten.Tensor, callback mod.Callback, backprop backpropagate) {
+func (model *residual) propagate(
+	y, dy, label ten.Tensor, callback mod.Callback, backprop backpropagate, done chan bool) {
+
 	gradients := callback(ten.TensorMap{
 		"x":     y,
 		"label": label,
 	})
 
-	dw10, dw11, db1 := backprop(ten.Subtract(gradients["x"], dy))
+	backprop(ten.Subtract(gradients["x"], dy))
 
-	for i := range dw10.Data {
-		model.W10.Data[i] -= λ * dw10.Data[i]
-	}
-	for i := range dw11.Data {
-		model.W11.Data[i] -= λ * dw11.Data[i]
-	}
-	for i := range db1.Data {
-		model.b1.Data[i] -= λ * db1.Data[i]
-	}
+	done <- true
 }
