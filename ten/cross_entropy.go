@@ -1,7 +1,7 @@
 package ten
 
 func CrossEntropy(target, y Tensor) (cost float64, dy Tensor) {
-	onesLike := Constant(1)
+	onesLike := Constant(1 + 1e-10)
 
 	cost = Sum(Scale(Add(
 		Multiply(target, Log(y)),

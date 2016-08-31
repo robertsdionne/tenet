@@ -3,6 +3,7 @@ package mnist
 import (
 	"github.com/robertsdionne/tenet/mod"
 	"github.com/robertsdionne/tenet/ten"
+	"log"
 )
 
 type residual struct {
@@ -14,7 +15,7 @@ const (
 	β = 0.01
 	λ = 0.001
 	μ = 0.0
-	σ = 0.01
+	σ = 0.0
 )
 
 func NewResidual(dimension, classes int32) (model mod.Model) {
@@ -38,14 +39,13 @@ func (model *residual) Inputs() (shapes ten.ShapeMap) {
 	return
 }
 
-func (model *residual) Train(tensors ten.TensorMap, callback mod.Callback) (gradients ten.TensorMap, done chan bool) {
+func (model *residual) Train(tensors ten.TensorMap, callback mod.Callback) (gradients ten.TensorMap) {
 	x := tensors["x"]
 	label := tensors["label"]
 
 	y, dy, dx, backprop := model.process(x, label)
 
-	done = make(chan bool, 1)
-	go model.propagate(y, dy, label, callback, backprop, done)
+	go model.propagate(y, dy, label, callback, backprop)
 
 	gradients = ten.TensorMap{
 		"x": dx,
@@ -83,22 +83,36 @@ func (model *residual) process(x, label ten.Tensor) (y, dy, dx ten.Tensor, backp
 		dw11, _ := ten.MatrixMultiplyGradient(dg1, model.W11, label)
 		dw10, _ := ten.MatrixMultiplyGradient(dg0, model.W10, y)
 
+		W0 := model.W0.Copy()
+		b0 := model.b0.Copy()
+
+		W10 := model.W10.Copy()
+		W11 := model.W11.Copy()
+		b1 := model.b1.Copy()
+
 		for i := range dw0.Data {
-			model.W0.Data[i] -= λ * dw0.Data[i]
+			W0.Data[i] -= λ * dw0.Data[i]
 		}
 		for i := range db0.Data {
-			model.b0.Data[i] -= λ * db0.Data[i]
+			b0.Data[i] -= λ * db0.Data[i]
 		}
 
 		for i := range dw10.Data {
-			model.W10.Data[i] -= λ * dw10.Data[i]
+			W10.Data[i] -= λ * dw10.Data[i]
 		}
 		for i := range dw11.Data {
-			model.W11.Data[i] -= λ * dw11.Data[i]
+			W11.Data[i] -= λ * dw11.Data[i]
 		}
 		for i := range db1.Data {
-			model.b1.Data[i] -= λ * db1.Data[i]
+			b1.Data[i] -= λ * db1.Data[i]
 		}
+
+		model.W0 = W0
+		model.b0 = b0
+
+		model.W10 = W10
+		model.W11 = W11
+		model.b1 = b1
 
 		return
 	}
@@ -106,15 +120,18 @@ func (model *residual) process(x, label ten.Tensor) (y, dy, dx ten.Tensor, backp
 	return
 }
 
-func (model *residual) propagate(
-	y, dy, label ten.Tensor, callback mod.Callback, backprop backpropagate, done chan bool) {
-
+func (model *residual) propagate(y, dy, label ten.Tensor, callback mod.Callback, backprop backpropagate) {
 	gradients := callback(ten.TensorMap{
 		"x":     y,
 		"label": label,
 	})
 
-	backprop(ten.Subtract(gradients["x"], dy))
+	d := ten.Subtract(gradients["x"], dy)
+	var loss float64
+	for _, value := range d.Data {
+		loss += value * value / 2.0
+	}
+	log.Println(loss)
 
-	done <- true
+	backprop(d)
 }

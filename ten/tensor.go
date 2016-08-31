@@ -41,3 +41,13 @@ func (tensor *Tensor) At(index ...int) (at *float64) {
 	at = &tensor.Data[offset]
 	return
 }
+
+func (tensor *Tensor) Copy() (copy Tensor) {
+	copy = NewLike(*tensor)
+
+	for i, value := range tensor.Data {
+		copy.Data[i] = value
+	}
+
+	return
+}

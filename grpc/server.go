@@ -14,22 +14,50 @@ import (
 	"net"
 )
 
-var port = flag.Int("grpc-port", 8080, "The GRPC port.")
+var inputPort = flag.Int("input-port", 8080, "The GRPC port.")
+var outputPort = flag.Int("output-port", 0, "The output port.")
+var modelType = flag.String("model-type", "residual", "Which model: residual, softmax, loss")
 
 // ListenAndServe starts the GRPC server.
 func ListenAndServe() (err error) {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", *inputPort))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+
+	var client prot.TeNetClient
+	if *outputPort > 0 {
+		connection, err := grpc.Dial(fmt.Sprintf(":%d", *outputPort), grpc.WithInsecure())
+		if err != nil {
+			log.Fatalf("failed to dial: %v", err)
+		}
+		defer connection.Close()
+		client = prot.NewTeNetClient(connection)
+	}
+
 	server := grpc.NewServer()
-	prot.RegisterTeNetServer(server, newServer(mnist.NewSoftmax(size, 10)))
+
+	var model mod.Model
+
+	switch *modelType {
+	case "residual":
+		model = mnist.NewResidual(size, 10)
+	case "softmax":
+		model = mnist.NewSoftmax(size, 10)
+	case "loss":
+		model = mnist.NewLoss(10)
+	default:
+		log.Fatalln("Unknown model type", *modelType)
+	}
+
+	prot.RegisterTeNetServer(server, newServer(model, client))
 	err = server.Serve(listener)
 	return
 }
 
 type server struct {
-	model mod.Model
+	model  mod.Model
+	client prot.TeNetClient
 }
 
 const (
@@ -37,9 +65,10 @@ const (
 	size  = width * width
 )
 
-func newServer(model mod.Model) (serve *server) {
+func newServer(model mod.Model, client prot.TeNetClient) (serve *server) {
 	serve = &server{
-		model: model,
+		model:  model,
+		client: client,
 	}
 	return
 }
@@ -68,11 +97,37 @@ func (serve *server) Post(stream prot.TeNet_PostServer) (err error) {
 			tensors[key] = ten.Tensor(*tensor)
 		}
 
-		gradients, done := serve.model.Train(tensors, func(tensors ten.TensorMap) ten.TensorMap {
-			log.Println(tensors["x"])
-			return ten.TensorMap{
-				"x": ten.New(10, 1),
+		gradients := serve.model.Train(tensors, func(tensors ten.TensorMap) ten.TensorMap {
+			stream, err := serve.client.Post(context.Background())
+			if err != nil {
+				log.Fatalln(err)
 			}
+
+			request := &prot.PostRequest{
+				Tensors: map[string]*prot.Tensor{},
+			}
+			for key, tensor := range tensors {
+				protTensor := prot.Tensor(tensor)
+				request.Tensors[key] = &protTensor
+			}
+
+			err = stream.Send(request)
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			response, err := stream.Recv()
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			gradients := ten.TensorMap{}
+			for key, gradient := range response.Gradients {
+				tensor := ten.Tensor(*gradient)
+				gradients[key] = tensor
+			}
+
+			return gradients
 		})
 
 		response := &prot.PostResponse{
@@ -85,10 +140,7 @@ func (serve *server) Post(stream prot.TeNet_PostServer) (err error) {
 
 		err = stream.Send(response)
 		if err != nil {
-			<-done
 			return err
 		}
-
-		<-done
 	}
 }

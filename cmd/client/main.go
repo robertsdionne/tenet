@@ -4,12 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/robertsdionne/tenet/dat"
 	"github.com/robertsdionne/tenet/prot"
 	"github.com/robertsdionne/tenet/ten"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"log"
-	"time"
 )
 
 var port = flag.Int("port", 8080, "The server port.")
@@ -30,21 +30,30 @@ func main() {
 	}
 
 	shape := response.Shape["x"].Components
-	log.Printf("Response: %v", response.Shape["x"].Components)
 
-	initializer := ten.Normal(0, 0.5)
+	trainImages, trainLabels, _, _, err := dat.GetMNISTDataset()
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	stream, err := client.Post(context.Background())
 	if err != nil {
 		log.Fatalf("failed to post: %v", err)
 	}
+	i := 0
 	for {
-		x := prot.Tensor(initializer(shape...))
+		xData := ten.New(shape...)
+		for j := 0; j < 28; j++ {
+			for k := 0; k < 28; k++ {
+				*xData.At(j*k, 0) = *trainImages.At(i, j, k)
+			}
+		}
+		x := prot.Tensor(xData)
 		y := ten.New(10, 1)
-		*y.At(5, 0) = 1
+		log.Println(*trainLabels.At(i))
+		*y.At(int(*trainLabels.At(i)), 0) = 1
+		i++
 		label := prot.Tensor(y)
-		log.Println("x", x)
-		log.Println("y", y)
 		err := stream.Send(&prot.PostRequest{
 			Tensors: map[string]*prot.Tensor{
 				"x":     &x,
@@ -55,13 +64,9 @@ func main() {
 			log.Fatalf("failed to send: %v", err)
 		}
 
-		response, err := stream.Recv()
+		_, err = stream.Recv()
 		if err != nil {
 			log.Fatalf("failed to recv: %v", err)
 		}
-
-		log.Printf("Response: %v", response)
-
-		time.Sleep(5 * time.Second)
 	}
 }
