@@ -7,8 +7,13 @@ import (
 	"math"
 )
 
+const (
+	α = 0.1
+)
+
 type loss struct {
-	classes int32
+	classes     int32
+	averageLoss float64
 }
 
 func NewLoss(classes int32) (model mod.Model) {
@@ -32,6 +37,8 @@ func (model *loss) Train(tensors ten.TensorMap, callback mod.Callback) (gradient
 
 	loss, dx := ten.CrossEntropy(label, x)
 
+	model.averageLoss = α*loss + (1-α)*model.averageLoss
+
 	xArgmax, _ := findArgmax(x)
 	yArgmax, _ := findArgmax(label)
 
@@ -40,7 +47,7 @@ func (model *loss) Train(tensors ten.TensorMap, callback mod.Callback) (gradient
 		status = "❌"
 	}
 
-	log.Println(status, "Actual:", xArgmax, "Expected:", yArgmax, "Loss:", loss)
+	log.Printf("%s  Actual %d  Expected %d  Loss %.4g  Average %.4g\n", status, xArgmax, yArgmax, loss, model.averageLoss)
 
 	gradients = ten.TensorMap{
 		"x": dx,

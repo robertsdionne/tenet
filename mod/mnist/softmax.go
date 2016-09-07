@@ -8,7 +8,8 @@ import (
 
 type softmax struct {
 	syntheticGradient
-	W0, b0 ten.Tensor
+	W0, b0      ten.Tensor
+	averageLoss float64
 }
 
 func NewSoftmax(dimension, classes int32) (model mod.Model) {
@@ -55,18 +56,14 @@ func (model *softmax) process(x, label ten.Tensor) (y, dy, dx ten.Tensor, backpr
 	g0 := ten.MatrixMultiply(model.W10, y)
 	g1 := ten.MatrixMultiply(model.W11, label)
 	g2 := ten.Add(g0, g1)
-	g3 := ten.BroadcastAdd(g2, model.b1)
-	g4 := ten.HyperbolicTangent(g3)
-	dy = ten.Add(g4, y)
+	dy = ten.BroadcastAdd(g2, model.b1)
 
 	dh1 := ten.SoftmaxGradient(dy, y)
 	dh0, db0 := ten.BroadcastAddGradient(dh1, model.b0)
 	dw0, dx := ten.MatrixMultiplyGradient(dh0, model.W0, x)
 
 	backprop = func(loss ten.Tensor) {
-		dg4, _ := ten.AddGradient(loss)
-		dg3 := ten.HyperbolicTangentGradient(dg4, g4)
-		dg2, db1 := ten.BroadcastAddGradient(dg3, model.b1)
+		dg2, db1 := ten.BroadcastAddGradient(loss, model.b1)
 		dg0, dg1 := ten.AddGradient(dg2)
 		dw11, _ := ten.MatrixMultiplyGradient(dg1, model.W11, label)
 		dw10, _ := ten.MatrixMultiplyGradient(dg0, model.W10, y)
@@ -119,7 +116,10 @@ func (model *softmax) propagate(y, dy, label ten.Tensor, callback mod.Callback, 
 	for _, value := range d.Data {
 		loss += value * value / 2.0
 	}
-	log.Println(loss)
+
+	model.averageLoss = α*loss + (1-α)*model.averageLoss
+
+	log.Printf("Loss %.4g  Average %.4g", loss, model.averageLoss)
 
 	backprop(d)
 }

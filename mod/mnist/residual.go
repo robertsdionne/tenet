@@ -8,14 +8,15 @@ import (
 
 type residual struct {
 	syntheticGradient
-	W0, b0 ten.Tensor
+	W0, b0      ten.Tensor
+	averageLoss float64
 }
 
 const (
 	β = 0.01
 	λ = 0.001
 	μ = 0.0
-	σ = 0.0
+	σ = 0.01
 )
 
 func NewResidual(dimension, classes int32) (model mod.Model) {
@@ -59,26 +60,19 @@ type backpropagate func(loss ten.Tensor)
 func (model *residual) process(x, label ten.Tensor) (y, dy, dx ten.Tensor, backprop backpropagate) {
 	h0 := ten.MatrixMultiply(model.W0, x)
 	h1 := ten.BroadcastAdd(h0, model.b0)
-	h2 := ten.RectifiedLinear(h1)
-	y = ten.Add(h2, x)
+	y = ten.RectifiedLinear(h1)
 
 	g0 := ten.MatrixMultiply(model.W10, y)
 	g1 := ten.MatrixMultiply(model.W11, label)
 	g2 := ten.Add(g0, g1)
-	g3 := ten.BroadcastAdd(g2, model.b1)
-	g4 := ten.HyperbolicTangent(g3)
-	dy = ten.Add(g4, y)
+	dy = ten.BroadcastAdd(g2, model.b1)
 
-	dh2, dx0 := ten.AddGradient(dy)
-	dh1 := ten.RectifiedLinearGradient(dh2, h1)
+	dh1 := ten.RectifiedLinearGradient(y, h1)
 	dh0, db0 := ten.BroadcastAddGradient(dh1, model.b0)
-	dw0, dx1 := ten.MatrixMultiplyGradient(dh0, model.W0, x)
-	dx = ten.Add(dx0, dx1)
+	dw0, dx := ten.MatrixMultiplyGradient(dh0, model.W0, x)
 
 	backprop = func(loss ten.Tensor) {
-		dg4, _ := ten.AddGradient(loss)
-		dg3 := ten.HyperbolicTangentGradient(dg4, g4)
-		dg2, db1 := ten.BroadcastAddGradient(dg3, model.b1)
+		dg2, db1 := ten.BroadcastAddGradient(loss, model.b1)
 		dg0, dg1 := ten.AddGradient(dg2)
 		dw11, _ := ten.MatrixMultiplyGradient(dg1, model.W11, label)
 		dw10, _ := ten.MatrixMultiplyGradient(dg0, model.W10, y)
@@ -131,7 +125,10 @@ func (model *residual) propagate(y, dy, label ten.Tensor, callback mod.Callback,
 	for _, value := range d.Data {
 		loss += value * value / 2.0
 	}
-	log.Println(loss)
+
+	model.averageLoss = α*loss + (1-α)*model.averageLoss
+
+	log.Printf("Loss %.4g  Average %.4g", loss, model.averageLoss)
 
 	backprop(d)
 }

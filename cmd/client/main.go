@@ -40,8 +40,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to post: %v", err)
 	}
-	i := 0
+	step := 0
 	for {
+		i := step % int(trainImages.Shape[0])
 		xData := ten.New(shape...)
 		for j := 0; j < 28; j++ {
 			for k := 0; k < 28; k++ {
@@ -52,7 +53,7 @@ func main() {
 		y := ten.New(10, 1)
 		log.Println(*trainLabels.At(i))
 		*y.At(int(*trainLabels.At(i)), 0) = 1
-		i++
+		step++
 		label := prot.Tensor(y)
 		err := stream.Send(&prot.PostRequest{
 			Tensors: map[string]*prot.Tensor{
