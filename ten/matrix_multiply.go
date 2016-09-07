@@ -17,6 +17,17 @@ func MatrixMultiply(w, x Tensor) (y Tensor) {
 	return
 }
 
+func DualMatrixMultiply(w, x Tensor) (y Tensor) {
+	m, n := int(w.Shape[1]), int(x.Shape[2])
+
+	y = New(2, int32(m), int32(n))
+
+	y.AssignSlice(0, MatrixMultiply(w.Slice(0), x.Slice(0)))
+	y.AssignSlice(1, Add(MatrixMultiply(w.Slice(0), x.Slice(1)), MatrixMultiply(w.Slice(1), x.Slice(0))))
+
+	return
+}
+
 // y = w * x
 // y_ij = w_ik * x_kj
 

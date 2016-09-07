@@ -51,3 +51,31 @@ func (tensor *Tensor) Copy() (copy Tensor) {
 
 	return
 }
+
+func (tensor *Tensor) Slice(index int) (slice Tensor) {
+	shape := tensor.Shape[1:]
+	firstStride := int(tensor.Stride[0])
+
+	slice = New(shape...)
+	slice.Data = tensor.Data[index*firstStride : (index+1)*firstStride]
+
+	return
+}
+
+func (tensor *Tensor) AssignSlice(index int, source Tensor) {
+	destination := tensor.Slice(index)
+	copy(destination.Data, source.Data)
+}
+
+func (tensor *Tensor) DualCopy() (dual Tensor) {
+	dual = New(tensor.DualShape()...)
+	copy(dual.Data, tensor.Data)
+
+	return
+}
+
+func (tensor *Tensor) DualShape() (shape []int32) {
+	shape = []int32{2}
+	shape = append(shape, tensor.Shape...)
+	return
+}
