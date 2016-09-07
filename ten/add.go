@@ -10,6 +10,11 @@ func Add(a, b Tensor) (c Tensor) {
 	return
 }
 
+func DualAdd(a, b Tensor) (c Tensor) {
+	c = Add(a, b)
+	return
+}
+
 func AddGradient(dc Tensor) (da, db Tensor) {
 	da, db = NewLike(dc), NewLike(dc)
 
