@@ -67,6 +67,14 @@ func (tensor *Tensor) AssignSlice(index int, source Tensor) {
 	copy(destination.Data, source.Data)
 }
 
+func (tensor *Tensor) AssignReal(source Tensor) {
+	tensor.AssignSlice(0, source)
+}
+
+func (tensor *Tensor) AssignDual(source Tensor) {
+	tensor.AssignSlice(1, source)
+}
+
 func (tensor *Tensor) DualCopy() (dual Tensor) {
 	dual = New(tensor.DualShape()...)
 	copy(dual.Data, tensor.Data)
@@ -77,5 +85,15 @@ func (tensor *Tensor) DualCopy() (dual Tensor) {
 func (tensor *Tensor) DualShape() (shape []int32) {
 	shape = []int32{2}
 	shape = append(shape, tensor.Shape...)
+	return
+}
+
+func (tensor *Tensor) Real() (real Tensor) {
+	real = tensor.Slice(0)
+	return
+}
+
+func (tensor *Tensor) Dual() (dual Tensor) {
+	dual = tensor.Slice(1)
 	return
 }

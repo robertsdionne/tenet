@@ -22,8 +22,8 @@ func DualMatrixMultiply(w, x Tensor) (y Tensor) {
 
 	y = New(2, int32(m), int32(n))
 
-	y.AssignSlice(0, MatrixMultiply(w.Slice(0), x.Slice(0)))
-	y.AssignSlice(1, Add(MatrixMultiply(w.Slice(0), x.Slice(1)), MatrixMultiply(w.Slice(1), x.Slice(0))))
+	y.AssignReal(MatrixMultiply(w.Real(), x.Real()))
+	y.AssignDual(Add(MatrixMultiply(w.Real(), x.Dual()), MatrixMultiply(w.Dual(), x.Real())))
 
 	return
 }
