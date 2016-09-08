@@ -57,19 +57,36 @@ func (model *residual) Train(tensors ten.TensorMap, callback mod.Callback) (grad
 
 type backpropagate func(loss ten.Tensor)
 
-func (model *residual) process(x, label ten.Tensor) (y, dy, dx ten.Tensor, backprop backpropagate) {
-	h0 := ten.MatrixMultiply(model.W0, x)
-	h1 := ten.BroadcastAdd(h0, model.b0)
+func residualForward(W, b, x ten.Tensor) (h0, h1, y ten.Tensor) {
+	h0 = ten.MatrixMultiply(W, x)
+	h1 = ten.BroadcastAdd(h0, b)
 	y = ten.RectifiedLinear(h1)
+	return
+}
+
+func dualResidualForward(W, b, x ten.Tensor) (h0, h1, y ten.Tensor) {
+	h0 = ten.DualMatrixMultiply(W, x)
+	h1 = ten.DualBroadcastAdd(h0, b)
+	y = ten.DualRectifiedLinear(h1)
+	return
+}
+
+func residualGradient(W, b, x, h1, dy ten.Tensor) (dw, db, dx, dh0, dh1 ten.Tensor) {
+	dh1 = ten.RectifiedLinearGradient(dy, h1)
+	dh0, db = ten.BroadcastAddGradient(dh1, b)
+	dw, dx = ten.MatrixMultiplyGradient(dh0, W, x)
+	return
+}
+
+func (model *residual) process(x, label ten.Tensor) (y, dy, dx ten.Tensor, backprop backpropagate) {
+	_, h1, y := residualForward(model.W0, model.b0, x)
 
 	g0 := ten.MatrixMultiply(model.W10, y)
 	g1 := ten.MatrixMultiply(model.W11, label)
 	g2 := ten.Add(g0, g1)
 	dy = ten.BroadcastAdd(g2, model.b1)
 
-	dh1 := ten.RectifiedLinearGradient(y, h1)
-	dh0, db0 := ten.BroadcastAddGradient(dh1, model.b0)
-	dw0, dx := ten.MatrixMultiplyGradient(dh0, model.W0, x)
+	dw0, db0, dx, _, _ := residualGradient(model.W0, model.b0, x, h1, dy)
 
 	backprop = func(loss ten.Tensor) {
 		dg2, db1 := ten.BroadcastAddGradient(loss, model.b1)
