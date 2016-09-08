@@ -4,10 +4,19 @@ package ten
 func Multiply(a, b Tensor) (c Tensor) {
 	c = NewLike(a)
 
-	for i := 0; i < int(a.Shape[0]); i++ {
-		for j := 0; j < int(a.Shape[1]); j++ {
-			*c.At(i, j) = *a.At(i, j) * *b.At(i, j)
-		}
+	for i := range c.Data {
+		c.Data[i] = a.Data[i] * b.Data[i]
+	}
+
+	return
+}
+
+func DualMultiply(a, b Tensor) (c Tensor) {
+	c = NewLike(a)
+
+	for i := range c.Real().Data {
+		c.Real().Data[i] = a.Real().Data[i] * b.Real().Data[i]
+		c.Dual().Data[i] = a.Real().Data[i]*b.Dual().Data[i] + a.Dual().Data[i]*b.Real().Data[i]
 	}
 
 	return
