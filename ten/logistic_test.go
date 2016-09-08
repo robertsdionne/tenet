@@ -28,7 +28,7 @@ func TestLogisticGradient(t *testing.T) {
 		return
 	}
 
-	gradients := TestGradients(logistic, &x)
+	gradients := TestGradients(logistic, dy, &x)
 
 	assert.InDeltaSlice(t, gradients[&x].Data, dx.Data, 1e-10)
 }

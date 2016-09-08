@@ -33,7 +33,7 @@ func TestMultiplyGradient(t *testing.T) {
 		return
 	}
 
-	gradients := TestGradients(multiply, &a, &b)
+	gradients := TestGradients(multiply, dc, &a, &b)
 
 	assert.InDeltaSlice(t, gradients[&a].Data, da.Data, 1e-10)
 	assert.InDeltaSlice(t, gradients[&b].Data, db.Data, 1e-10)

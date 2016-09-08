@@ -14,8 +14,9 @@ func Multiply(a, b Tensor) (c Tensor) {
 func DualMultiply(a, b Tensor) (c Tensor) {
 	c = NewLike(a)
 
+	c.AssignReal(Multiply(a.Real(), b.Real()))
+
 	for i := range c.Real().Data {
-		c.Real().Data[i] = a.Real().Data[i] * b.Real().Data[i]
 		c.Dual().Data[i] = a.Real().Data[i]*b.Dual().Data[i] + a.Dual().Data[i]*b.Real().Data[i]
 	}
 

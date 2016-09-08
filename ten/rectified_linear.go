@@ -22,9 +22,10 @@ func rectifiedLinear(x float64) (y float64) {
 func DualRectifiedLinear(x Tensor) (y Tensor) {
 	y = NewLike(x)
 
+	y.AssignReal(RectifiedLinear(x.Real()))
+
 	for i := range y.Real().Data {
 		if x.Real().Data[i] > 0 {
-			y.Real().Data[i] = x.Real().Data[i]
 			y.Dual().Data[i] = x.Dual().Data[i]
 		}
 	}

@@ -17,8 +17,9 @@ func HyperbolicTangent(x Tensor) (y Tensor) {
 func DualHyperbolicTangent(x Tensor) (y Tensor) {
 	y = NewLike(x)
 
+	y.AssignReal(HyperbolicTangent(x.Real()))
+
 	for i := range x.Real().Data {
-		y.Real().Data[i] = math.Tanh(x.Real().Data[i])
 		cosh := math.Cosh(x.Real().Data[i])
 		y.Dual().Data[i] = x.Dual().Data[i] / cosh / cosh
 	}

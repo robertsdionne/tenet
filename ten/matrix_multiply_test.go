@@ -35,7 +35,7 @@ func TestMatrixMultiplyGradient(t *testing.T) {
 		return
 	}
 
-	gradients := TestGradients(matrixMultiply, &w, &x)
+	gradients := TestGradients(matrixMultiply, dy, &w, &x)
 
 	assert.Equal(t, gradients[&w], dw)
 	assert.Equal(t, gradients[&x], dx)

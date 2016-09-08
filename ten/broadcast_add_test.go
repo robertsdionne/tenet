@@ -33,7 +33,7 @@ func TestBroadcastAddGradient(t *testing.T) {
 		return
 	}
 
-	gradients := TestGradients(broadcastAdd, &x, &b)
+	gradients := TestGradients(broadcastAdd, dy, &x, &b)
 
 	assert.Equal(t, gradients[&x], dx)
 	assert.Equal(t, gradients[&b], db)

@@ -22,8 +22,9 @@ func logistic(x float64) (y float64) {
 func DualLogistic(x Tensor) (y Tensor) {
 	y = NewLike(x)
 
+	y.AssignReal(Logistic(x.Real()))
+
 	for i := range x.Real().Data {
-		y.Real().Data[i] = logistic(x.Real().Data[i])
 		exp := math.Exp(x.Real().Data[i])
 		exp1 := exp + 1
 		y.Dual().Data[i] = x.Dual().Data[i] * exp / exp1 / exp1

@@ -28,7 +28,7 @@ func TestHyperbolicTangentGradient(t *testing.T) {
 		return
 	}
 
-	gradients := TestGradients(hyperbolicTangent, &x)
+	gradients := TestGradients(hyperbolicTangent, dy, &x)
 
 	assert.InDeltaSlice(t, gradients[&x].Data, dx.Data, 1e-10)
 }

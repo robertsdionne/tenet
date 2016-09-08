@@ -33,7 +33,7 @@ func TestSubtractGradient(t *testing.T) {
 		return
 	}
 
-	gradients := TestGradients(subtract, &a, &b)
+	gradients := TestGradients(subtract, dc, &a, &b)
 
 	assert.Equal(t, gradients[&a], da)
 	assert.Equal(t, gradients[&b], db)

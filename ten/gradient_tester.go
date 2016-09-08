@@ -1,6 +1,8 @@
 package ten
 
-func TestGradients(operation func(tensors ...Tensor) Tensor, tensors ...*Tensor) (gradients map[*Tensor]Tensor) {
+func TestGradients(
+	operation func(tensors ...Tensor) Tensor, δ Tensor, tensors ...*Tensor) (gradients map[*Tensor]Tensor) {
+
 	gradients = map[*Tensor]Tensor{}
 
 	duals := []Tensor{}
@@ -16,7 +18,7 @@ func TestGradients(operation func(tensors ...Tensor) Tensor, tensors ...*Tensor)
 			duals[t].Dual().Data[i] = 1
 			output := operation(duals...)
 
-			gradients[tensors[t]].Data[i] = Sum(output.Dual())
+			gradients[tensors[t]].Data[i] = Sum(Multiply(δ, output.Dual()))
 			duals[t].Dual().Data[i] = 0
 		}
 	}

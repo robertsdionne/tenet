@@ -15,13 +15,8 @@ func BroadcastAdd(x, b Tensor) (y Tensor) {
 func DualBroadcastAdd(x, b Tensor) (y Tensor) {
 	y = NewLike(x)
 
-	for d := 0; d < 2; d++ {
-		for i := 0; i < int(y.Shape[1]); i++ {
-			for j := 0; j < int(y.Shape[2]); j++ {
-				*y.At(d, i, j) = *x.At(d, i, j) + *b.At(d, i, 0)
-			}
-		}
-	}
+	y.AssignReal(BroadcastAdd(x.Real(), b.Real()))
+	y.AssignDual(BroadcastAdd(x.Dual(), b.Dual()))
 
 	return
 }
