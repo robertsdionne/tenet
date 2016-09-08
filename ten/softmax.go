@@ -11,21 +11,24 @@ const (
 func Softmax(x Tensor) (y Tensor) {
 	y = NewLike(x)
 
-	maximum := math.Inf(-1)
-	for i := range x.Data {
-		if maximum < x.Data[i] {
-			maximum = x.Data[i]
-		}
-	}
+	_, maximum := Maximum(x)
+	shifted := SubtractScalar(x, maximum)
+	exp := Exp(shifted)
+	sum := ε + Sum(exp)
+	y = DivideScalar(AddScalar(exp, ε), sum)
 
-	sum := ε
-	for i := range x.Data {
-		sum += math.Exp(x.Data[i] - maximum)
-	}
+	return
+}
 
-	for i := range x.Data {
-		y.Data[i] = (math.Exp(x.Data[i]-maximum) + ε) / sum
-	}
+func DualSoftmax(x Tensor) (y Tensor) {
+	y = NewLike(x)
+
+	_, maximumReal, maximumDual := DualMaximum(x)
+	shifted := DualSubtractScalar(x, maximumReal, maximumDual)
+	exp := DualExp(shifted)
+	sumReal, sumDual := DualSum(exp)
+	sumReal += ε
+	y = DualDivideScalar(DualAddScalar(exp, ε, 0), sumReal, sumDual)
 
 	return
 }

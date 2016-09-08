@@ -6,3 +6,9 @@ func Sum(t Tensor) (sum float64) {
 	}
 	return
 }
+
+func DualSum(t Tensor) (sumReal, sumDual float64) {
+	sumReal = Sum(t.Real())
+	sumDual = Sum(t.Dual())
+	return
+}

@@ -10,8 +10,27 @@ func Add(a, b Tensor) (c Tensor) {
 	return
 }
 
+func AddScalar(a Tensor, b float64) (c Tensor) {
+	c = NewLike(a)
+
+	for i := range c.Data {
+		c.Data[i] = a.Data[i] + b
+	}
+
+	return
+}
+
 func DualAdd(a, b Tensor) (c Tensor) {
 	c = Add(a, b)
+	return
+}
+
+func DualAddScalar(a Tensor, bReal, bDual float64) (c Tensor) {
+	c = NewLike(a)
+
+	c.AssignReal(AddScalar(a.Real(), bReal))
+	c.AssignDual(AddScalar(a.Dual(), bDual))
+
 	return
 }
 
