@@ -10,6 +10,11 @@ func Subtract(a, b Tensor) (c Tensor) {
 	return
 }
 
+func DualSubtract(a, b Tensor) (c Tensor) {
+	c = Subtract(a, b)
+	return
+}
+
 func SubtractGradient(dc Tensor) (da, db Tensor) {
 	da, db = NewLike(dc), NewLike(dc)
 
