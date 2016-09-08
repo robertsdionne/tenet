@@ -19,6 +19,19 @@ func rectifiedLinear(x float64) (y float64) {
 	return
 }
 
+func DualRectifiedLinear(x Tensor) (y Tensor) {
+	y = NewLike(x)
+
+	for i := range y.Real().Data {
+		if x.Real().Data[i] > 0 {
+			y.Real().Data[i] = x.Real().Data[i]
+			y.Dual().Data[i] = x.Dual().Data[i]
+		}
+	}
+
+	return
+}
+
 func RectifiedLinearGradient(dy, x Tensor) (dx Tensor) {
 	dx = NewLike(x)
 
