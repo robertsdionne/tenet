@@ -80,19 +80,11 @@ func residualGradient(W, b, x, h1, dy ten.Tensor) (dw, db, dx, dh0, dh1 ten.Tens
 
 func (model *residual) process(x, label ten.Tensor) (y, dy, dx ten.Tensor, backprop backpropagate) {
 	_, h1, y := residualForward(model.W0, model.b0, x)
-
-	g0 := ten.MatrixMultiply(model.W10, y)
-	g1 := ten.MatrixMultiply(model.W11, label)
-	g2 := ten.Add(g0, g1)
-	dy = ten.BroadcastAdd(g2, model.b1)
-
+	dy = syntheticGradientForward(model.W10, model.W11, model.b1, y, label)
 	dw0, db0, dx, _, _ := residualGradient(model.W0, model.b0, x, h1, dy)
 
 	backprop = func(loss ten.Tensor) {
-		dg2, db1 := ten.BroadcastAddGradient(loss, model.b1)
-		dg0, dg1 := ten.AddGradient(dg2)
-		dw11, _ := ten.MatrixMultiplyGradient(dg1, model.W11, label)
-		dw10, _ := ten.MatrixMultiplyGradient(dg0, model.W10, y)
+		dw10, dw11, db1 := syntheticGradientGradient(model.W10, model.W11, model.b1, y, label, loss)
 
 		W0 := model.W0.Copy()
 		b0 := model.b0.Copy()

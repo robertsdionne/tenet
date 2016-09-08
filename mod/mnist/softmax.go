@@ -48,25 +48,34 @@ func (model *softmax) Train(tensors ten.TensorMap, callback mod.Callback) (gradi
 	return
 }
 
-func (model *softmax) process(x, label ten.Tensor) (y, dy, dx ten.Tensor, backprop backpropagate) {
-	h0 := ten.MatrixMultiply(model.W0, x)
-	h1 := ten.BroadcastAdd(h0, model.b0)
+func softmaxForward(W, b, x ten.Tensor) (h0, h1, y ten.Tensor) {
+	h0 = ten.MatrixMultiply(W, x)
+	h1 = ten.BroadcastAdd(h0, b)
 	y = ten.Softmax(h1)
+	return
+}
 
-	g0 := ten.MatrixMultiply(model.W10, y)
-	g1 := ten.MatrixMultiply(model.W11, label)
-	g2 := ten.Add(g0, g1)
-	dy = ten.BroadcastAdd(g2, model.b1)
+func dualSoftmaxForward(W, b, x ten.Tensor) (h0, h1, y ten.Tensor) {
+	h0 = ten.DualMatrixMultiply(W, x)
+	h1 = ten.DualBroadcastAdd(h0, b)
+	y = ten.DualSoftmax(h1)
+	return
+}
 
-	dh1 := ten.SoftmaxGradient(dy, y)
-	dh0, db0 := ten.BroadcastAddGradient(dh1, model.b0)
-	dw0, dx := ten.MatrixMultiplyGradient(dh0, model.W0, x)
+func softmaxGradient(W, b, x, y, dy ten.Tensor) (dw, db, dx, dh0, dh1 ten.Tensor) {
+	dh1 = ten.SoftmaxGradient(dy, y)
+	dh0, db = ten.BroadcastAddGradient(dh1, b)
+	dw, dx = ten.MatrixMultiplyGradient(dh0, W, x)
+	return
+}
+
+func (model *softmax) process(x, label ten.Tensor) (y, dy, dx ten.Tensor, backprop backpropagate) {
+	_, _, y = softmaxForward(model.W0, model.b0, x)
+	dy = syntheticGradientForward(model.W10, model.W11, model.b1, y, label)
+	dw0, db0, dx, _, _ := softmaxGradient(model.W0, model.b0, x, y, dy)
 
 	backprop = func(loss ten.Tensor) {
-		dg2, db1 := ten.BroadcastAddGradient(loss, model.b1)
-		dg0, dg1 := ten.AddGradient(dg2)
-		dw11, _ := ten.MatrixMultiplyGradient(dg1, model.W11, label)
-		dw10, _ := ten.MatrixMultiplyGradient(dg0, model.W10, y)
+		dw10, dw11, db1 := syntheticGradientGradient(model.W10, model.W11, model.b1, y, label, loss)
 
 		W0 := model.W0.Copy()
 		b0 := model.b0.Copy()
