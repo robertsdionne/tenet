@@ -19,6 +19,19 @@ func logistic(x float64) (y float64) {
 	return
 }
 
+func DualLogistic(x Tensor) (y Tensor) {
+	y = NewLike(x)
+
+	for i := range x.Real().Data {
+		y.Real().Data[i] = logistic(x.Real().Data[i])
+		exp := math.Exp(x.Real().Data[i])
+		exp1 := exp + 1
+		y.Dual().Data[i] = x.Dual().Data[i] * exp / exp1 / exp1
+	}
+
+	return
+}
+
 func LogisticGradient(dy, y Tensor) (dx Tensor) {
 	dx = NewLike(y)
 
