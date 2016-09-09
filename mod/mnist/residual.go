@@ -14,7 +14,7 @@ type residual struct {
 
 const (
 	β = 0.01
-	λ = 0.001
+	λ = 3e-5
 	μ = 0.0
 	σ = 0.01
 )
@@ -24,9 +24,9 @@ func NewResidual(dimension, classes int32) (model mod.Model) {
 		W0: ten.Normal(μ, σ)(dimension, dimension),
 		b0: ten.Constant(β)(dimension, 1),
 		syntheticGradient: syntheticGradient{
-			W10: ten.Normal(μ, σ)(dimension, dimension),
-			W11: ten.Normal(μ, σ)(dimension, classes),
-			b1:  ten.Constant(β)(dimension, 1),
+			W10: ten.Constant(0)(dimension, dimension),
+			W11: ten.Constant(0)(dimension, classes),
+			b1:  ten.Constant(0)(dimension, 1),
 		},
 	}
 	return
@@ -101,13 +101,13 @@ func (model *residual) process(x, label ten.Tensor) (y, dy, dx ten.Tensor, backp
 		}
 
 		for i := range dw10.Data {
-			W10.Data[i] -= λ * dw10.Data[i]
+			W10.Data[i] += λ * dw10.Data[i]
 		}
 		for i := range dw11.Data {
-			W11.Data[i] -= λ * dw11.Data[i]
+			W11.Data[i] += λ * dw11.Data[i]
 		}
 		for i := range db1.Data {
-			b1.Data[i] -= λ * db1.Data[i]
+			b1.Data[i] += λ * db1.Data[i]
 		}
 
 		model.W0 = W0

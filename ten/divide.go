@@ -5,7 +5,7 @@ func Divide(a, b Tensor) (c Tensor) {
 	c = NewLike(a)
 
 	for i := range a.Data {
-		c.Data[i] = a.Data[i] / (b.Data[i] + ε)
+		c.Data[i] = a.Data[i] / b.Data[i]
 	}
 
 	return
@@ -15,7 +15,7 @@ func DivideScalar(a Tensor, b float64) (c Tensor) {
 	c = NewLike(a)
 
 	for i := range a.Data {
-		c.Data[i] = a.Data[i] / (b + ε)
+		c.Data[i] = a.Data[i] / b
 	}
 
 	return

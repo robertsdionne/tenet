@@ -17,9 +17,9 @@ func NewSoftmax(dimension, classes int32) (model mod.Model) {
 		W0: ten.Normal(μ, σ)(classes, dimension),
 		b0: ten.Constant(β)(classes, 1),
 		syntheticGradient: syntheticGradient{
-			W10: ten.Normal(μ, σ)(classes, classes),
-			W11: ten.Normal(μ, σ)(classes, classes),
-			b1:  ten.Constant(β)(classes, 1),
+			W10: ten.Constant(0)(classes, classes),
+			W11: ten.Constant(0)(classes, classes),
+			b1:  ten.Constant(0)(classes, 1),
 		},
 	}
 	return
@@ -51,19 +51,19 @@ func (model *softmax) Train(tensors ten.TensorMap, callback mod.Callback) (gradi
 func softmaxForward(W, b, x ten.Tensor) (h0, h1, y ten.Tensor) {
 	h0 = ten.MatrixMultiply(W, x)
 	h1 = ten.BroadcastAdd(h0, b)
-	y = ten.Softmax(h1)
+	y = ten.Logistic(h1)
 	return
 }
 
 func dualSoftmaxForward(W, b, x ten.Tensor) (h0, h1, y ten.Tensor) {
 	h0 = ten.DualMatrixMultiply(W, x)
 	h1 = ten.DualBroadcastAdd(h0, b)
-	y = ten.DualSoftmax(h1)
+	y = ten.DualLogistic(h1)
 	return
 }
 
 func softmaxGradient(W, b, x, y, dy ten.Tensor) (dw, db, dx, dh0, dh1 ten.Tensor) {
-	dh1 = ten.SoftmaxGradient(dy, y)
+	dh1 = ten.LogisticGradient(dy, y)
 	dh0, db = ten.BroadcastAddGradient(dh1, b)
 	dw, dx = ten.MatrixMultiplyGradient(dh0, W, x)
 	return
@@ -92,13 +92,13 @@ func (model *softmax) process(x, label ten.Tensor) (y, dy, dx ten.Tensor, backpr
 		}
 
 		for i := range dw10.Data {
-			W10.Data[i] -= λ * dw10.Data[i]
+			W10.Data[i] += λ * dw10.Data[i]
 		}
 		for i := range dw11.Data {
-			W11.Data[i] -= λ * dw11.Data[i]
+			W11.Data[i] += λ * dw11.Data[i]
 		}
 		for i := range db1.Data {
-			b1.Data[i] -= λ * db1.Data[i]
+			b1.Data[i] += λ * db1.Data[i]
 		}
 
 		model.W0 = W0

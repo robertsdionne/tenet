@@ -49,7 +49,7 @@ func main() {
 				*xData.At(j*k, 0) = *trainImages.At(i, j, k)
 			}
 		}
-		x := prot.Tensor(xData)
+		x := prot.Tensor(ten.DivideScalar(xData, 255.0))
 		y := ten.New(10, 1)
 		log.Println(*trainLabels.At(i))
 		*y.At(int(*trainLabels.At(i)), 0) = 1

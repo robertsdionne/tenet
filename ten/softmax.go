@@ -14,8 +14,8 @@ func Softmax(x Tensor) (y Tensor) {
 	_, maximum := Maximum(x)
 	shifted := SubtractScalar(x, maximum)
 	exp := Exp(shifted)
-	sum := ε + Sum(exp)
-	y = DivideScalar(AddScalar(exp, ε), sum)
+	sum := Sum(exp)
+	y = DivideScalar(exp, sum)
 
 	return
 }
@@ -27,8 +27,7 @@ func DualSoftmax(x Tensor) (y Tensor) {
 	shifted := DualSubtractScalar(x, maximumReal, maximumDual)
 	exp := DualExp(shifted)
 	sumReal, sumDual := DualSum(exp)
-	sumReal += ε
-	y = DualDivideScalar(DualAddScalar(exp, ε, 0), sumReal, sumDual)
+	y = DualDivideScalar(exp, sumReal, sumDual)
 
 	return
 }
