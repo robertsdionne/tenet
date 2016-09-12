@@ -4,6 +4,7 @@ import (
 	"github.com/robertsdionne/tenet/prot"
 	"github.com/robertsdionne/tenet/ten/size"
 	"github.com/robertsdionne/tenet/ten/stride"
+	"log"
 )
 
 // Shape is the shape of a Tensor.
@@ -36,6 +37,10 @@ func NewLike(t0 Tensor) (t1 Tensor) {
 func (tensor *Tensor) At(index ...int) (at *float64) {
 	offset := 0
 	for i, stride := range tensor.Stride {
+		if index[i] < 0 || index[i] >= int(tensor.Shape[i]) {
+			log.Panicln("index", i, "out of bounds.", index[i])
+		}
+
 		offset += index[i] * int(stride)
 	}
 	at = &tensor.Data[offset]
@@ -52,7 +57,19 @@ func (tensor *Tensor) Copy() (copy Tensor) {
 	return
 }
 
+func (tensor *Tensor) Index(i int) (index []int) {
+	index = make([]int, len(tensor.Stride))
+	for j := range tensor.Stride {
+		index[j] = i / int(tensor.Stride[j]) % int(tensor.Shape[j])
+	}
+	return
+}
+
 func (tensor *Tensor) Slice(index int) (slice Tensor) {
+	if index < 0 || index >= int(tensor.Shape[0]) {
+		log.Panicln("Index out of bounds.", index)
+	}
+
 	shape := tensor.Shape[1:]
 	firstStride := int(tensor.Stride[0])
 
