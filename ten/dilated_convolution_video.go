@@ -4,9 +4,9 @@ package ten
 // The convolution along the time axis is causal and has stride matching the filter-duration.
 // * Filter w has shape (filter-duration, height, width, in-channels, out-channels).
 // * Signal x has shape (duration, height, width, in-channels).
-// * Output y has shape (duration / filter-duration, height, width, out-channels).
+// * Output y has shape (duration, height, width, out-channels).
 func DilatedConvolutionVideo(w, x Tensor, dilation int) (y Tensor) {
-	y = New(x.Shape[0]/w.Shape[0], x.Shape[1], x.Shape[2], w.Shape[4])
+	y = New(x.Shape[0], x.Shape[1], x.Shape[2], w.Shape[4])
 
 	for t1 := 0; t1 < int(y.Shape[0]); t1++ {
 		for i1 := 0; i1 < int(y.Shape[1]); i1++ {
@@ -16,7 +16,8 @@ func DilatedConvolutionVideo(w, x Tensor, dilation int) (y Tensor) {
 						for j := 0; j < int(w.Shape[2]); j++ {
 							I := dilation * (i - int(w.Shape[1])/2)
 							J := dilation * (j - int(w.Shape[2])/2)
-							t0 := t1*int(w.Shape[0]) + t
+							T := dilation * t
+							t0 := t1 + T
 							i0 := i1 + I
 							j0 := j1 + J
 
