@@ -30,3 +30,21 @@ func TestDilatedConvolutionVideoShape(t *testing.T) {
 		116, 160, 158, 230, 84, 136,
 	}, y.Data)
 }
+
+func TestDilatedConvolutionVideoGradient(t *testing.T) {
+	x := NewTest(4, 3, 3, 2)
+	w := NewTest(2, 3, 3, 2, 2)
+	dy := Constant(1)(4, 3, 3, 2)
+
+	dw, dx := DilatedConvolutionVideoGradient(w, x, dy, 2)
+
+	dilatedConvolutionVideo := func(tensors ...Tensor) (y Tensor) {
+		y = DualDilatedConvolutionVideo(tensors[0], tensors[1], 2)
+		return
+	}
+
+	gradients := TestGradients(dilatedConvolutionVideo, dy, &w, &x)
+
+	assert.Equal(t, gradients[&w], dw)
+	assert.Equal(t, gradients[&x], dx)
+}
